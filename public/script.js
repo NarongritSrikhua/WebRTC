@@ -64,13 +64,13 @@ function addVideoStream(video, stream) {
 
 // Add capture functionality
 captureLocalBtn.addEventListener('click', () => {
-  captureVideo(myVideo, 'My Video')
+  captureVideo(myVideo, 'Capture 1')
 })
 
 captureRemoteBtn.addEventListener('click', () => {
   const remoteVideo = document.querySelector('#video-grid video:not(:first-child)')
   if (remoteVideo) {
-    captureVideo(remoteVideo, 'Remote Video')
+    captureVideo(remoteVideo, 'Capture 2')
   } else {
     alert('No remote video found')
   }
@@ -95,27 +95,127 @@ function captureVideo(videoElement, label) {
   })
 }
 
-function addCaptureToGrid(imageData, label) {
-  // Create container for the capture
+function addCaptureToGrid(imageData, label, timestamp) {
   const container = document.createElement('div')
   container.className = 'capture-container'
   
-  // Add label
   const labelElement = document.createElement('div')
   labelElement.className = 'capture-label'
-  labelElement.textContent = `${label} - ${new Date().toLocaleTimeString()}`
+  labelElement.textContent = `${label} - ${formatTimestamp(timestamp)}`
   container.appendChild(labelElement)
   
-  // Add captured image
   const img = document.createElement('img')
   img.src = imageData
   container.appendChild(img)
   
-  // Add to captures grid
   capturesGrid.insertBefore(container, capturesGrid.firstChild)
 }
 
 // Listen for captures from other user
 socket.on('image-captured', data => {
-  addCaptureToGrid(data.imageData, data.label)
+  addCaptureToGrid(data.imageData, data.label, data.timestamp)
 })
+
+// Add this after other socket.on handlers
+socket.on('existing-captures', captures => {
+  // Clear existing captures first
+  capturesGrid.innerHTML = ''
+  
+  // Add all existing captures
+  captures.forEach(capture => {
+    addCaptureToGrid(capture.imageData, capture.label, capture.timestamp)
+  })
+})
+
+// Initialize with any existing captures
+if (typeof INITIAL_CAPTURES !== 'undefined' && INITIAL_CAPTURES.length > 0) {
+  INITIAL_CAPTURES.forEach(capture => {
+    addCaptureToGrid(capture.imageData, capture.label, capture.timestamp)
+  })
+}
+
+// Chat functionality
+const chatInput = document.getElementById('chat-input')
+const sendButton = document.getElementById('send-message')
+const chatMessages = document.getElementById('chat-messages')
+
+function formatTimestamp(timestamp) {
+  return new Date(timestamp).toLocaleTimeString()
+}
+
+function addMessageToChat(message, timestamp, isSent) {
+  const messageElement = document.createElement('div')
+  messageElement.className = `message ${isSent ? 'sent' : 'received'}`
+  
+  const textSpan = document.createElement('span')
+  textSpan.textContent = message
+  
+  const timeSpan = document.createElement('span')
+  timeSpan.className = 'message-time'
+  timeSpan.textContent = formatTimestamp(timestamp)
+  
+  messageElement.appendChild(textSpan)
+  messageElement.appendChild(timeSpan)
+  
+  chatMessages.appendChild(messageElement)
+  chatMessages.scrollTop = chatMessages.scrollHeight
+}
+
+sendButton.addEventListener('click', sendMessage)
+chatInput.addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') {
+    sendMessage()
+  }
+})
+
+function sendMessage() {
+  const message = chatInput.value.trim()
+  if (message) {
+    const timestamp = new Date().toISOString()
+    
+    // Add message to local chat
+    addMessageToChat(message, timestamp, true)
+    
+    // Send message to other users in room
+    socket.emit('send-chat-message', {
+      message: message,
+      roomId: ROOM_ID
+    })
+    
+    // Clear input
+    chatInput.value = ''
+  }
+}
+
+// Listen for chat messages from other users
+socket.on('chat-message', data => {
+  addMessageToChat(data.message, data.timestamp, false)
+})
+
+// Handle room initialization
+socket.on('initialize-room', data => {
+  // Clear existing content
+  capturesGrid.innerHTML = ''
+  chatMessages.innerHTML = ''
+  
+  // Add existing captures
+  data.captures.forEach(capture => {
+    addCaptureToGrid(capture.imageData, capture.label, capture.timestamp)
+  })
+  
+  // Add existing messages
+  data.messages.forEach(msg => {
+    addMessageToChat(msg.message, msg.timestamp, false)
+  })
+})
+
+// Initialize room with existing data
+if (typeof INITIAL_ROOM_DATA !== 'undefined') {
+  INITIAL_ROOM_DATA.captures.forEach(capture => {
+    addCaptureToGrid(capture.imageData, capture.label, capture.timestamp)
+  })
+  
+  INITIAL_ROOM_DATA.messages.forEach(msg => {
+    addMessageToChat(msg.message, msg.timestamp, false)
+  })
+}
