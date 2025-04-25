@@ -23,9 +23,64 @@
       height: 100%;
       object-fit: cover;
     }
+
+    .controls {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 10px;
+    }
+
+    button {
+      padding: 10px 20px;
+      cursor: pointer;
+    }
+
+    #captures-section {
+      margin-top: 20px;
+      padding: 20px;
+      border-top: 1px solid #ccc;
+    }
+
+    #captures-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, 300px);
+      gap: 20px;
+      margin-top: 20px;
+    }
+
+    .capture-container {
+      position: relative;
+      width: 100%;
+    }
+
+    .capture-container img {
+      width: 100%;
+      height: auto;
+      max-width: 300px;
+    }
+
+    .capture-label {
+      position: absolute;
+      top: -25px;
+      left: 0;
+      font-size: 14px;
+      color: #666;
+      white-space: nowrap;
+    }
   </style>
 </head>
 <body>
   <div id="video-grid"></div>
+  <div class="controls">
+    <button id="captureLocal">Capture My Video</button>
+    <button id="captureRemote">Capture Remote Video</button>
+  </div>
+  <div id="captures-section">
+    <h2>Captured Images</h2>
+    <div id="captures-grid"></div>
+  </div>
 </body>
 </html>

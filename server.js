@@ -23,6 +23,15 @@ io.on('connection', socket => {
     socket.on('disconnect', () => {
       socket.to(roomId).broadcast.emit('user-disconnected', userId)
     })
+    
+    // ภาพ
+    socket.on('image-captured', data => {
+      socket.to(data.roomId).broadcast.emit('image-captured', {
+        imageData: data.imageData,
+        label: data.label
+      })
+    })
+    // ภาพ
   })
 })
 
