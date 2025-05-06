@@ -75,8 +75,8 @@ io.on('connection', socket => {
       room.captures.push(captureData)
 
       // Broadcast to others in room
-      socket.to(data.roomId).broadcast.emit('image-captured', captureData)
-    })
+      socket.to(roomId).broadcast.emit('image-captured', captureData)
+    })    
   })
 })
 

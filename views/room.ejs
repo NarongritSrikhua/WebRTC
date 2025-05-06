@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>POC</title>
+
   <script id="initial-data" type="application/json">
     <%- JSON.stringify({ captures, messages }) %>
   </script>
@@ -16,158 +17,294 @@
   <script defer src="https://unpkg.com/peerjs@1.2.0/dist/peerjs.min.js"></script>
   <script src="/socket.io/socket.io.js" defer></script>
   <script src="script.js" defer></script>
-  <title>Document</title>
+
   <style>
-    #video-grid {
-      position: relative;
-      display: grid;
-      grid-template-columns: repeat(auto-fill, 300px);
-      grid-auto-rows: 300px;
-      margin-right: 320px;  /* Space for chat */
+    * {
+      box-sizing: border-box;
+      font-family: 'Segoe UI', sans-serif;
     }
-    
-    video {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
+
+    body {
+      margin: 0;
+      background-color: #f4f7f9;
+      color: #333;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px 16px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    header h1 {
+      font-size: 28px;
+      margin: 0;
+      color: #111827;
     }
 
     .controls {
-      position: relative;  /* Changed from fixed to relative */
       display: flex;
-      gap: 10px;
       justify-content: center;
-      padding: 15px;
-      background: rgba(255, 255, 255, 0.9);
-      margin-top: 20px;    /* Space between video grid and controls */
-      border-radius: 5px;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
     }
 
-    button {
+    .controls button {
       padding: 10px 20px;
-      cursor: pointer;
       border: none;
-      border-radius: 5px;
-      background: #007bff;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      transition: 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    #showQRBtn {
+      background-color: #007bff;
       color: white;
-      font-weight: bold;
-      transition: background 0.2s;
+    }
+    #copyQRBtn {
+      background-color: #007bff;
+      color: white;
+    }
+    #copyLinkBtn {
+      background-color: #007bff;
+      color: white;
     }
 
-    button:hover {
-      background: #0056b3;
+    #captureLocal {
+      background-color: #007bff;
+      color: white;
+    }
+
+    #captureRemote {
+      background-color: #007bff;
+      color: white;
+    }
+
+    .controls button:hover {
+      opacity: 0.9;
+    }
+
+    #video-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+      margin-bottom: 40px;
+    }
+
+    video {
+      width: 100%;
+      height: auto;
+      object-fit: cover;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
 
     #captures-section {
-      margin-top: 20px;
-      padding: 20px;
-      border-top: 1px solid #ccc;
-      margin-right: 320px;
+      background: white;
+      padding: 24px;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+    }
+
+    #captures-section h3 {
+      margin-top: 0;
+      font-size: 20px;
+      color: #222;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 12px;
     }
 
     #captures-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, 300px);
-      gap: 20px;
       margin-top: 20px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, 260px); /* 👈 ลดขนาดจาก 260px */
+      gap: 20px;
     }
+
 
     .capture-container {
       position: relative;
-      width: 100%;
     }
 
     .capture-container img {
       width: 100%;
-      height: auto;
-      max-width: 300px;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+      transition: transform 0.3s;
+    }
+
+    .capture-container img:hover {
+      transform: scale(1.02);
     }
 
     .capture-label {
       position: absolute;
-      top: -25px;
+      top: -20px;
       left: 0;
-      font-size: 14px;
-      color: #666;
-      white-space: nowrap;
+      font-size: 13px;
+      color: #6b7280;
     }
 
-    .chat-container {
+    /* ปรับให้ modal อยู่กลางจอ */
+    .modal {
+      display: none; /* ซ่อน modal ตอนเริ่มต้น */
       position: fixed;
-      right: 20px;
-      bottom: 20px;
-      width: 300px;
-      height: 400px;
-      background: white;
-      border: 1px solid #ccc;
-      border-radius: 5px;
+      z-index: 1000;
+      inset: 0; /* ทำให้เต็มหน้าจอ */
+      background-color: rgba(0, 0, 0, 0.4); /* สีพื้นหลัง */
+      justify-content: center; /* จัดกลางแนวนอน */
+      align-items: center; /* จัดกลางแนวตั้ง */
+    }
+
+    /* ทำให้ modal-content มีขนาดพอดีกับ QR Code */
+    .modal-content {
+      background-color: white;
+      padding: 0; /* ไม่ให้มี padding รอบ QR */
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
       display: flex;
-      flex-direction: column;
+      justify-content: center;
+      align-items: center;
     }
 
-    .chat-messages {
-      flex-grow: 1;
-      overflow-y: auto;
-      padding: 15px;
-      display: flex;
-      flex-direction: column;
+    /* กำหนดขนาด QR Code */
+    #qrcode canvas {
+      width: 200px; /* ขนาดของ QR */
+      height: 200px;
     }
 
-    .chat-input-container {
-      padding: 10px;
-      border-top: 1px solid #ccc;
-      display: flex;
-      gap: 10px;
-    }
+    .logo-container {
+        display: flex;
+        justify-content: center; /* จัดกึ่งกลางในแนวนอน */
+        align-items: center;     /* จัดกึ่งกลางในแนวตั้ง */
+        gap: 20px;               /* ระยะห่างระหว่างโลโก้ */
+        margin-bottom: 32px;
+      }
 
-    .chat-input {
-      flex-grow: 1;
-      padding: 5px;
-    }
+      .logo-box {
+        width: 120px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+      }
 
-    .message {
-      margin-bottom: 10px;
-      padding: 8px 12px;
-      border-radius: 8px;
-      max-width: 80%;
-      position: relative;
-    }
+      .logo-box img {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+      }
 
-    .message.sent {
-      background: #007bff;
-      color: white;
-      margin-left: auto;
-    }
+    @media (max-width: 768px) {
+      .controls {
+        flex-direction: column;
+        gap: 12px;
+      }
 
-    .message.received {
-      background: #e9ecef;
-      color: #333;
-    }
+      header {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
 
-    .message-time {
-      font-size: 0.75em;
-      opacity: 0.8;
-      display: block;
-      margin-top: 4px;
+      header img {
+        height: 40px;
+        object-fit: contain;
+      }
+
+      header h1 {
+        font-size: 22px;
+      }
     }
   </style>
 </head>
 <body>
-  <div id="video-grid"></div>
-  <div class="controls">
-    <button id="captureLocal">Capture 1</button>
-    <button id="captureRemote">Capture 2</button>
-  </div>
-  <div id="captures-section">
-    <div id="captures-grid"></div>
-  </div>
-  <div class="chat-container">
-    <div class="chat-messages" id="chat-messages"></div>
-    <div class="chat-input-container">
-      <input type="text" class="chat-input" id="chat-input">
-      <button id="send-message"></button>
+  <div class="container">
+    <header>
+      <div class="logo-container">
+        <div class="logo-box">
+          <a href="https://traveljoy.sompo.co.th/th" target="_blank">
+            <img src="/images/sompo-main-logo.png" alt="Sompo Logo" />
+          </a>          
+        </div>
+        <div class="logo-box">
+          <a href="https://www.codemonday.com/" target="_blank">
+            <img src="/images/CMD_LOGO.png" alt="CodeMonday Logo" />
+          </a>
+        </div>
+      </div>
+    </header>
+    
+      <!-- <div id="qrcode" style="margin-top: 1rem;"></div> -->
+    <div class="controls">
+      <button id="captureLocal">Capture 1</button>
+      <button id="captureRemote">Capture 2</button>
+      <button id="copyLinkBtn">Copy Link</button>
+      <button id="showQRBtn">QR Code</button>
+      <!-- <button id="copyQRBtn">Copy QR Code</button> -->
+    </div>
+    <!-- QR Code Modal -->
+    <div id="qrModal" class="modal">
+      <div class="modal-content">
+        <div id="qrcode"></div>
+      </div>
+    </div>
+    
+    <div id="video-grid"></div>
+
+    <div id="captures-section">
+      <h3>Captured Images</h3>
+      <div id="captures-grid"></div>
     </div>
   </div>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+<script>
+  const roomUrl = window.location.href;
+  // คัดลอกลิงก์
+  document.getElementById('copyLinkBtn').addEventListener('click', () => {
+    navigator.clipboard.writeText(roomUrl).then(() => {
+      alert('คัดลอกลิงก์เรียบร้อยแล้ว!');
+    }).catch(() => {
+      alert('เกิดข้อผิดพลาดในการคัดลอกลิงก์');
+    });
+  });
+
+  // แสดง QR Code ใน Modal
+  const modal = document.getElementById("qrModal");
+  const openBtn = document.getElementById("showQRBtn");
+  const toggleBtn = document.getElementById("showQRBtn");
+  const qrContainer = document.getElementById("qrcode");
+
+  toggleBtn.onclick = () => {
+    const isVisible = modal.style.display === "block";
+    
+    if (isVisible) {
+      modal.style.display = "none";
+      qrContainer.innerHTML = ""; // ล้าง QR
+    } else {
+      qrContainer.innerHTML = "";
+      QRCode.toCanvas(roomUrl, { width: 200 }, (err, canvas) => {
+        if (!err) qrContainer.appendChild(canvas);
+      });
+      modal.style.display = "block";
+    }
+  };
+
+  window.onclick = (event) => {
+    if (event.target === modal) modal.style.display = "none";
+  };
+</script>
+
 </body>
 </html>

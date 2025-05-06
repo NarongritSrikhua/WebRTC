@@ -2,8 +2,8 @@ const socket = io('/')
 const videoGrid = document.getElementById('video-grid')
 const capturesGrid = document.getElementById('captures-grid')
 const myPeer = new Peer(undefined, {
-  host: '/',
-  port: '3001'
+  host: 'call-peer.boy-pwt.dev',
+  port: '443'
 })
 
 const myVideo = document.createElement('video')
@@ -101,7 +101,7 @@ function addCaptureToGrid(imageData, label, timestamp) {
   
   const labelElement = document.createElement('div')
   labelElement.className = 'capture-label'
-  labelElement.textContent = `${label} - ${formatTimestamp(timestamp)}`
+  // labelElement.textContent = `${label}`
   container.appendChild(labelElement)
   
   const img = document.createElement('img')
@@ -136,7 +136,7 @@ if (typeof INITIAL_CAPTURES !== 'undefined' && INITIAL_CAPTURES.length > 0) {
 
 // Chat functionality
 const chatInput = document.getElementById('chat-input')
-const sendButton = document.getElementById('send-message')
+// const sendButton = document.getElementById('send-message')
 const chatMessages = document.getElementById('chat-messages')
 
 function formatTimestamp(timestamp) {
@@ -161,36 +161,36 @@ function addMessageToChat(message, timestamp, isSent) {
   chatMessages.scrollTop = chatMessages.scrollHeight
 }
 
-sendButton.addEventListener('click', sendMessage)
-chatInput.addEventListener('keypress', (e) => {
-  if (e.key === 'Enter') {
-    sendMessage()
-  }
-})
+// sendButton.addEventListener('click', sendMessage)
+// chatInput.addEventListener('keypress', (e) => {
+//   if (e.key === 'Enter') {
+//     sendMessage()
+//   }
+// })
 
-function sendMessage() {
-  const message = chatInput.value.trim()
-  if (message) {
-    const timestamp = new Date().toISOString()
+// function sendMessage() {
+//   const message = chatInput.value.trim()
+//   if (message) {
+//     const timestamp = new Date().toISOString()
     
-    // Add message to local chat
-    addMessageToChat(message, timestamp, true)
+//     // Add message to local chat
+//     addMessageToChat(message, timestamp, true)
     
-    // Send message to other users in room
-    socket.emit('send-chat-message', {
-      message: message,
-      roomId: ROOM_ID
-    })
+//     // Send message to other users in room
+//     socket.emit('send-chat-message', {
+//       message: message,
+//       roomId: ROOM_ID
+//     })
     
-    // Clear input
-    chatInput.value = ''
-  }
-}
+//     // Clear input
+//     chatInput.value = ''
+//   }
+// }
 
 // Listen for chat messages from other users
-socket.on('chat-message', data => {
-  addMessageToChat(data.message, data.timestamp, false)
-})
+// socket.on('chat-message', data => {
+//   addMessageToChat(data.message, data.timestamp, false)
+// })
 
 // Handle room initialization
 socket.on('initialize-room', data => {
